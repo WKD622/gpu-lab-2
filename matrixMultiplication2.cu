@@ -27,30 +27,30 @@ void MatMul(const Matrix A, const Matrix B, Matrix C, int block_size)
 	size_t size = A.width * A.height * sizeof(float);
 	cudaMalloc((void**) &d_A.elements, size);
 	cudaMemcpy(d_A.elements, A.elements, size, cudaMemcpyHostToDevice);
-	
+
 	Matrix d_B;
 	d_B.width = B.width; d_B.height = B.height;
 	size = B.width * B.height * sizeof(float);
 	cudaMalloc((void**) &d_B.elements, size);
 	cudaMemcpy(d_B.elements, B.elements, size, cudaMemcpyHostToDevice);
-	
+
 	// allocate C in device
 	Matrix d_C;
 	d_C.width = C.width; d_C.height = C.height;
 	size = d_C.width * d_C.height * sizeof(float);
 	cudaMalloc((void**) &d_C.elements, size);
-	
+
 	// call kernel
-	dim3 dimBlock(block_size, block_size, 1); // define the block size (what is the best value?) 
+	dim3 dimBlock(block_size, block_size, 1); // define the block size (what is the best value?)
 	int gx = ( B.width % dimBlock.x == 0 ) ? (B.width / dimBlock.x) : (B.width / dimBlock.x + 1);
 	int gy = ( A.height % dimBlock.y == 0 ) ? (A.height / dimBlock.y) : (A.height / dimBlock.y + 1);
-	dim3 dimGrid(gx, gy, 1); //  choose grid size depending on problem size 
-        
+	dim3 dimGrid(gx, gy, 1); //  choose grid size depending on problem size
+
 	MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C);
-	
+
 	// copy C to host
 	cudaMemcpy(C.elements, d_C.elements, size, cudaMemcpyDeviceToHost);
-	
+
 	// free device memory
 	cudaFree(d_A.elements);
 	cudaFree(d_B.elements);
@@ -59,7 +59,7 @@ void MatMul(const Matrix A, const Matrix B, Matrix C, int block_size)
 
 //matrix multiplication kernel
 __global__ void MatMulKernel(Matrix A, Matrix B, Matrix C)
-{	
+{
 	float Cvalue = 0;
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -99,9 +99,9 @@ void MatMulCpu(Matrix A, Matrix B, Matrix C)
 }
 
 int main(int argc, char * const argv[])
-{	
+{
 	int sizemult = 1;
-	const int baseWidth = 64;
+	const int baseWidth = 128;
 	const int baseHeight = 128;
 
 
@@ -133,32 +133,32 @@ int main(int argc, char * const argv[])
 	int height = sizemult * baseHeight;
 
 	int block_size = atoi(argv[3]);
-	
+
 	Matrix A;
 	Matrix B;
 	Matrix C;
-	
+
 	A.width = width;
 	B.width = width;
 	C.width = width;
-	
+
 	A.height = height;
 	B.height = height;
 	C.height = height;
-	
+
 	A.elements = new float[width*height];
 	B.elements = new float[width*height];
 	C.elements = new float[width*height];
-	
+
 	//fill matrices
 	std::ifstream A_input;
 	std::ifstream B_input;
 	A_input.open("A.txt");
 	B_input.open("B.txt");
-	
+
 	float a, b;
-	A_input >> a;	
-	B_input >> b;	
+	A_input >> a;
+	B_input >> b;
 	int i = 0;
 	while (!A_input.eof())
 	{	A.elements[i] = a;
@@ -176,7 +176,7 @@ int main(int argc, char * const argv[])
 		A.elements[i] = i % 16;
 		B.elements[i] = i % 16;
 	}
-	
+
 
 	std::cout << width << ';' << height << ';' << block_size << ';';
 
@@ -191,7 +191,7 @@ int main(int argc, char * const argv[])
 		sdkStopTimer(&timer);
 		float t = sdkGetTimerValue(&timer);
 		sdkDeleteTimer(&timer);
-		
+
 		std::cout << t << std::endl;
 	}
 
@@ -221,4 +221,3 @@ int main(int argc, char * const argv[])
 
 	return 0;
 }
-	
